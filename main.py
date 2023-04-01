@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from typing import Optional
 from schemas import BlogRequest
+from database import engine
+import models
 app = FastAPI()
 
+models.Base.metadata.create_all(engine)
 
 @app.get("/")
 def index():
