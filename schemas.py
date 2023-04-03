@@ -15,3 +15,9 @@ class BlogReturn(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class UserRequest(BaseModel):
+    name: str
+    email: str
+    password: str

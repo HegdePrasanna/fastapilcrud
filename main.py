@@ -1,11 +1,14 @@
 from fastapi import FastAPI, Depends, status, Response, HTTPException
 # from typing import Optional
 from fastapi.encoders import jsonable_encoder
-from schemas import BlogRequest,BlogReturn
+from schemas import BlogRequest,BlogReturn,UserRequest
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 import models
+from hashing import Hash
 from typing import List
+
+
 app = FastAPI()
 
 models.Base.metadata.create_all(engine)
@@ -25,11 +28,11 @@ def index():
 #             "data": [f"{limit}"]}
 
 
-@app.get("/blogs/unpublished", description="Get All Unpublished blogs")
-def get_blogs_unpublished():
-    return {"status": 200,
-            "detail": "Success",
-            "data": ["List of unpublished blogs"]}
+# @app.get("/blogs/unpublished", description="Get All Unpublished blogs")
+# def get_blogs_unpublished():
+#     return {"status": 200,
+#             "detail": "Success",
+#             "data": ["List of unpublished blogs"]}
 
 
 # @app.get("/blogs/{id}")
@@ -39,12 +42,12 @@ def get_blogs_unpublished():
 #             "data": [{"id": id}]}
 
 
-@app.get("/blogs/{id}/comments")
-def get_blogs_id_comments(id: int):
-    return {"status": 200,
-            "detail": "Success",
-            "data": [{"id": id,
-                     "comments": ["1", "2"]}]}
+# @app.get("/blogs/{id}/comments")
+# def get_blogs_id_comments(id: int):
+#     return {"status": 200,
+#             "detail": "Success",
+#             "data": [{"id": id,
+#                      "comments": ["1", "2"]}]}
 
 
 ##########################################################
@@ -124,3 +127,15 @@ def destroy(id: int, response: Response, db: Session = Depends(get_db)):
     return {"status": 204,
             "detail": "Success",
             "data": []}
+
+
+@app.post('/user',status_code=status.HTTP_201_CREATED)
+def create_user(request: UserRequest, db: Session = Depends(get_db)):
+    
+    new_user = models.User(name=request.name,email=request.email,password=Hash.hashing_pd(request.password))
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"status": 200,
+            "detail": "Success",
+            "data": new_user}
