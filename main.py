@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Depends, status, Response, HTTPException
 # from typing import Optional
-from schemas import BlogRequest
+from fastapi.encoders import jsonable_encoder
+from schemas import BlogRequest,BlogReturn
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 import models
+from typing import List
 app = FastAPI()
 
 models.Base.metadata.create_all(engine)
@@ -54,12 +56,13 @@ def get_db():
         db.close()
 
 
-@app.get("/blogs")
+@app.get("/blogs",response_model=List[BlogReturn])
 def get_all_blogs(db: Session = Depends(get_db)):
     blogs = db.query(models.Blog).all()
-    return {"status": 200,
-            "detail": "Success",
-            "data": blogs}
+    # return {"status": 200,
+    #         "detail": "Success",
+    #         "data": blogs}
+    return blogs
 
 
 @app.post("/blogs", status_code=status.HTTP_201_CREATED)
@@ -73,8 +76,9 @@ def create_blog(request: BlogRequest, db: Session = Depends(get_db)):
             "data": new_blog}
 
 
+# @app.get("/blogs/{id}", response_model=BlogReturn)
 @app.get("/blogs/{id}")
-def get_blogs_id(id: int, response: Response, db: Session = Depends(get_db)):
+def get_blogs_id(id: int, response: Response, db: Session = Depends(get_db)) -> BlogReturn:
     blog = db.query(models.Blog).filter(models.Blog.id == id).first()
     if not blog:
         # response.status_code = status.HTTP_404_NOT_FOUND
@@ -83,16 +87,40 @@ def get_blogs_id(id: int, response: Response, db: Session = Depends(get_db)):
         #     "data": []}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="No Data Found")
-    return {"status": 200,
-            "detail": "Success",
-            "data": [blog]}
+    # return {"status": 200,
+    #         "detail": "Success",
+    #         "data": [blog]}
+    return blog
 
 
-@app.delete("/blogs/{id}")
-def destroy(id: int, response: Response, db: Session = Depends(get_db)):
-    db.query(models.Blog).filter(models.Blog.id == id).delete(
-        synchronize_session=False)
+@app.put("/blogs/{id}",status_code=status.HTTP_202_ACCEPTED)
+def update_blogs_id(id: int, request:BlogRequest, response: Response, db: Session = Depends(get_db)):
+    request = jsonable_encoder(request)
+    blog = db.query(models.Blog).filter(models.Blog.id == id)
+    if not blog.first():
+        # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not Found")
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"status": status.HTTP_404_NOT_FOUND,
+                "detail": "Data Not Found",
+                "data": []}
+    blog.update(request)
     db.commit()
     return {"status": 200,
+            "detail": "Success",
+            "data": [blog.first()]}
+
+
+@app.delete("/blogs/{id}",status_code=status.HTTP_204_NO_CONTENT)
+def destroy(id: int, response: Response, db: Session = Depends(get_db)):
+    blog = db.query(models.Blog).filter(models.Blog.id == id)
+    if not blog.first():
+        # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not Found")
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return {"status": status.HTTP_404_NOT_FOUND,
+                "detail": "Data Not Found",
+                "data": []}
+    blog.delete(synchronize_session=False)
+    db.commit()
+    return {"status": 204,
             "detail": "Success",
             "data": []}
