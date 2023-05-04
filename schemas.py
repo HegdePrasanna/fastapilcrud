@@ -54,3 +54,19 @@ class BlogReturn(BaseModel):
 
     class Config:
         orm_mode = True
+
+class BlogReturnMain(BaseModel):
+    status: int
+    detail: str
+    data: BlogReturn = None
+
+    class Config:
+        orm_mode = True
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    
+    class Config:
+        orm_mode = True
