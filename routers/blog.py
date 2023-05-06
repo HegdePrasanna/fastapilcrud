@@ -6,6 +6,8 @@ import models
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
 from repository import blog
+import schemas
+from OAuth2 import get_current_user
 
 router = APIRouter(
                     tags=["Blogs"], prefix="/blog"
@@ -13,7 +15,7 @@ router = APIRouter(
 
 
 @router.get("",response_model=List[schemas.BlogReturn])
-def get_all_blogs(db: Session = Depends(get_db)):
+def get_all_blogs(db: Session = Depends(get_db),current_user:schemas.UserReturn1=Depends(get_current_user)):
     # blogs = db.query(models.Blog).all()
     # # return {"status": 200,
     # #         "detail": "Success",
@@ -21,8 +23,10 @@ def get_all_blogs(db: Session = Depends(get_db)):
     # return blogs
     return blog.get_all(db)
 
+
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_blog(request: schemas.BlogRequest, db: Session = Depends(get_db)) -> schemas.BlogReturnMain:
+def create_blog(request: schemas.BlogRequest, db: Session = Depends(get_db),
+                current_user:schemas.UserReturn1=Depends(get_current_user)) -> schemas.BlogReturnMain:
     # new_blog = models.Blog(title=request.title, body=request.body, user_id=request.user_id)
     # db.add(new_blog)
     # db.commit()
@@ -34,7 +38,8 @@ def create_blog(request: schemas.BlogRequest, db: Session = Depends(get_db)) -> 
 
 #  @router.get("/blogs/{id}", response_model=BlogReturn)
 @router.get("/{id}")
-def get_blogs_id(id: int, response: Response, db: Session = Depends(get_db)) -> schemas.BlogReturn:
+def get_blogs_id(id: int, response: Response, db: Session = Depends(get_db),
+                 current_user:schemas.UserReturn1=Depends(get_current_user)) -> schemas.BlogReturn:
     blog = db.query(models.Blog).filter(models.Blog.id == id).first()
     if not blog:
         # response.status_code = status.HTTP_404_NOT_FOUND
@@ -50,7 +55,8 @@ def get_blogs_id(id: int, response: Response, db: Session = Depends(get_db)) -> 
 
 
 @router.put("/{id}",status_code=status.HTTP_202_ACCEPTED)
-def update_blogs_id(id: int, request:schemas.BlogRequest, response: Response, db: Session = Depends(get_db)):
+def update_blogs_id(id: int, request:schemas.BlogRequest, response: Response, db: Session = Depends(get_db),
+                    current_user:schemas.UserReturn1=Depends(get_current_user)):
     request = jsonable_encoder(request)
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
@@ -67,7 +73,8 @@ def update_blogs_id(id: int, request:schemas.BlogRequest, response: Response, db
 
 
 @router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT,tags=["Blogs"])
-def destroy(id: int, response: Response, db: Session = Depends(get_db)):
+def destroy(id: int, response: Response, db: Session = Depends(get_db),
+            current_user:schemas.UserReturn1=Depends(get_current_user)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
         # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not Found")

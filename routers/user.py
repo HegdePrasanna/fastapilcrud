@@ -4,7 +4,7 @@ from database import get_db
 import models
 from sqlalchemy.orm import Session
 from hashing import Hash
-
+from OAuth2 import get_current_user
 
 router = APIRouter(
                     tags=["User"], prefix="/user"
@@ -12,7 +12,8 @@ router = APIRouter(
 
 # @router.post('',status_code=status.HTTP_201_CREATED)
 @router.post('',status_code=status.HTTP_201_CREATED,response_model=schemas.UserReturn)
-def create_user(request: schemas.UserRequest, response: Response, db: Session = Depends(get_db)):
+def create_user(request: schemas.UserRequest, response: Response, db: Session = Depends(get_db),
+                current_user:schemas.UserReturn1=Depends(get_current_user)):
     new_user = models.User(name=request.name,
                            email=request.email,
                            password=Hash.hashing_pd(request.password))
@@ -26,7 +27,8 @@ def create_user(request: schemas.UserRequest, response: Response, db: Session = 
 
 
 @router.get('')
-def get_all_users(db: Session = Depends(get_db)) -> schemas.UserReturn2:
+def get_all_users(db: Session = Depends(get_db),
+                  current_user:schemas.UserReturn1=Depends(get_current_user)) -> schemas.UserReturn2:
     all_users = db.query(models.User).all()
     if not all_users:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -41,7 +43,8 @@ def get_all_users(db: Session = Depends(get_db)) -> schemas.UserReturn2:
 
 
 @router.get('/{id}')
-def get_user_by_id(id: int, response: Response, db: Session = Depends(get_db)):
+def get_user_by_id(id: int, response: Response, db: Session = Depends(get_db),
+                   current_user:schemas.UserReturn1=Depends(get_current_user)):
     user = db.query(models.User).filter(models.User.id == id).first()
     if not user:
         """
